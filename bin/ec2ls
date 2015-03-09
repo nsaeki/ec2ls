@@ -1,0 +1,38 @@
+#!/usr/bin/env ruby
+require 'optparse'
+require 'aws-sdk-core'
+
+if $0 == __FILE__
+  options = {
+    region: 'ap-northeast-1'
+  }
+
+  OptionParser.new do |opt|
+    opt.on('-p [PROFILE]') { |v| options[:profile] = v }
+  end.parse(ARGV)
+
+  if options[:profile]
+    puts "Use profile #{options[:profile]}"
+    creds = Aws::SharedCredentials.new(profile: options[:profile])
+    ec2 = Aws::EC2::Client.new(region: options[:region],
+                               credentials: creds)
+  else
+    ec2 = Aws::EC2::Client.new(region: options[:region])
+  end
+
+  ec2.describe_instances.each do |page|
+    page.on_success do
+      page.reservations.flat_map do |r|
+        r.instances.each do |ins|
+          puts [
+            ins.instance_id,
+            ins.tags.select { |i| i.key == 'Name' }.first.value,
+            ins.private_ip_address,
+            ins.public_ip_address,
+          ].join("\t")
+        end
+      end
+    end
+  end
+end
+
