@@ -88,39 +88,37 @@ def format_property(instance, property)
 end
 
 
-if $0 == __FILE__
-  options = {
-    region: ENV['AWS_REGION'] || 'ap-northeast-1',
-    properties: DEFAULT_PROPERTIES,
-  }
+options = {
+  region: ENV['AWS_REGION'] || 'ap-northeast-1',
+  properties: DEFAULT_PROPERTIES,
+}
 
-  OptionParser.new do |opt|
-    opt.on('-p', '--profile [PROFILE]', 'Profile name in ~/.aws/credentials') do |v|
-      options[:profile] = v
-    end
-    opt.on('-k', '--keys [KEYS]', 'Show specified values of instance (comma separated)') do |v|
-      options[:properties] += v.split(',')
-    end
-    opt.on('-l', '--list-keys', 'Show all instance keys') do |v|
-      puts "Available Keys:"
-      puts all_properties.map { |p| "  #{p}" }
-      exit
-    end
-  end.parse!
-
-  if options[:profile]
-    creds = aws_credential(options[:profile], options)
-    ec2 = Aws::EC2::Client.new(region: options[:region], credentials: creds)
-  else
-    ec2 = Aws::EC2::Client.new(region: options[:region])
+OptionParser.new do |opt|
+  opt.on('-p', '--profile [PROFILE]', 'Profile name in ~/.aws/credentials') do |v|
+    options[:profile] = v
   end
+  opt.on('-k', '--keys [KEYS]', 'Show specified values of instance (comma separated)') do |v|
+    options[:properties] += v.split(',')
+  end
+  opt.on('-l', '--list-keys', 'Show all instance keys') do |v|
+    puts "Available Keys:"
+    puts all_properties.map { |p| "  #{p}" }
+    exit
+  end
+end.parse!
 
-  ec2.describe_instances.each do |page|
-    page.on_success do
-      page.reservations.flat_map do |r|
-        r.instances.each do |ins|
-          puts options[:properties].map { |p| format_property(ins, p) }.join("\t")
-        end
+if options[:profile]
+  creds = aws_credential(options[:profile], options)
+  ec2 = Aws::EC2::Client.new(region: options[:region], credentials: creds)
+else
+  ec2 = Aws::EC2::Client.new(region: options[:region])
+end
+
+ec2.describe_instances.each do |page|
+  page.on_success do
+    page.reservations.flat_map do |r|
+      r.instances.each do |ins|
+        puts options[:properties].map { |p| format_property(ins, p) }.join("\t")
       end
     end
   end
