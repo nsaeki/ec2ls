@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.name          = "ec2ls"
   spec.version       = Ec2ls::VERSION
   spec.authors       = ["Nobuo Saeki"]
-  spec.email         = ["nobuo.saeki@gmai.com"]
+  spec.email         = ["nobuo.saeki@gmail.com"]
   spec.summary       = %q{List EC2 instances.}
   spec.description   = %q{}
   spec.homepage      = ""
