@@ -50,11 +50,11 @@ CUSTOM_PROPERTIES = {
   },
   state:     ->(i) { i.state.name },
   tags:      ->(i) { i.tags.join(',') },
-  placement: ->(i) { i.placement.availability_zone },
+  availability_zone: ->(i) { i.placement.availability_zone },
 }
 
 DEFAULT_PROPERTIES = %i(
-  instance_id name instance_type placement state
+  instance_id name instance_type availability_zone state
   private_ip_address public_ip_address )
 
 
