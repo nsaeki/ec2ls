@@ -44,7 +44,10 @@ INSTANCE_PROPERTIES = %i(
 )
 
 CUSTOM_PROPERTIES = {
-  name:      ->(i) { i.tags.select { |t| t.key == 'Name' }.first.value },
+  name:      ->(i) {
+    name_tag = i.tags.select { |t| t.key == 'Name' }.first
+    name_tag.value if name_tag
+  },
   state:     ->(i) { i.state.name },
   tags:      ->(i) { i.tags.join(',') },
   placement: ->(i) { i.placement.availability_zone },
