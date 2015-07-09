@@ -22,7 +22,7 @@ To show available keys:
 
 ## Credentials
 
-This tool uses (AWS SDK for Go)[https://github.com/aws/aws-sdk-go]. Your credentials are loaded by the library default priority unless you specify a profile name in AWS credentials.
+This tool uses [AWS SDK for Go](https://github.com/aws/aws-sdk-go). Your credentials are loaded by the library default priority unless you specify a profile name in AWS credentials.
 
 ## Installation
 
