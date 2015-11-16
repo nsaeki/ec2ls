@@ -6,9 +6,46 @@ import (
 	flag "github.com/ogier/pflag"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/mitchellh/go-homedir"
+	"strings"
+	"reflect"
 )
+
+var defaultAttributes = [...]string{
+	"InstanceId",
+	"Name",
+	"InstanceType",
+	"AvailabilityZone",
+	"State",
+	"PrivateIpAddress",
+	"PublicIpAddress",
+}
+
+func name(i *ec2.Instance) string {
+	tags := i.Tags
+	for _, tag := range tags {
+		if "Name" == *tag.Key {
+			return *tag.Value
+		}
+	}
+	return ""
+}
+
+func state(i *ec2.Instance) string {
+	return *i.State.Name
+}
+
+func availabilityZone(i *ec2.Instance) string {
+	return *i.Placement.AvailabilityZone
+}
+
+var getter = map[string](func(*ec2.Instance)string){
+	"Name":  name,
+	"State":  state,
+	"AvailabilityZone":  availabilityZone,
+}
 
 func main() {
 	config := aws.Config{}
@@ -26,15 +63,10 @@ func main() {
 		config.Credentials = creds
 	}
 
-	if len(config.Region) == 0 {
-		// Sorry, this is my preference!
-		config.Region = "ap-northeast-1"
-	}
-
 	// Create an EC2 service object in the "us-west-2" region
 	// Note that you can also configure your region globally by
 	// exporting the AWS_REGION environment variable
-	svc := ec2.New(&config)
+	svc := ec2.New(session.New(), &config)
 
 	// Call the DescribeInstances Operation
 	resp, err := svc.DescribeInstances(nil)
@@ -43,11 +75,24 @@ func main() {
 	}
 
 	// resp has all of the response data, pull out instance IDs:
-	fmt.Println("> Number of reservation sets: ", len(resp.Reservations))
-	for idx, res := range resp.Reservations {
-		fmt.Println("  > Number of instances: ", len(res.Instances))
+	for idx := range resp.Reservations {
 		for _, inst := range resp.Reservations[idx].Instances {
-			fmt.Println("    - Instance ID: ", *inst.InstanceID)
+			attrs := make([]string, 0, 10)
+			for _, attr := range defaultAttributes {
+				v := ""
+				f, ok := getter[attr]
+				if ok {
+					v = f(inst)
+				} else {
+					field := reflect.ValueOf(*inst).FieldByName(attr)
+					if !field.IsNil() {
+						v = fmt.Sprintf("%v", field.Elem().Interface())
+					}
+				}
+				attrs = append(attrs, v)
+			}
+			fmt.Println(strings.Join(attrs, "\t"))
 		}
 	}
 }
+
