@@ -4,7 +4,7 @@ List AWS EC2 instances.
 
 ## Usage
 
-Configure your aws credentials in the manner of [aws-cli](https://github.com/aws/aws-cli), and type:
+Configure your AWS credentials in the manner of [aws-cli](https://github.com/aws/aws-cli), and type:
 
     $ ec2ls
 
@@ -22,16 +22,14 @@ To show available keys:
 
 ## Credentials
 
-This tools uses AWS SDK for Ruby, so credentials are loaded [as described in the library document](https://github.com/aws/aws-sdk-ruby#credentials) unless you specify any profile.
+This tool uses [AWS SDK for Go](https://github.com/aws/aws-sdk-go). Your credentials are loaded by the library default priority unless you specify a profile name in AWS credentials.
 
 ## Installation
 
-This file is not distributed in rubygems.
-You should install by following steps:
+By following steps:
 
 ```bash
-$ git clone https://github.com/nsaeki/ec2ls.git
-$ rake install
+$ go get github.com/nsaeki/ec2ls
 ```
 
 ## Contributing
