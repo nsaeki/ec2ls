@@ -1,16 +1,17 @@
 package main
 
 import (
-	"os"
 	"fmt"
+	"strings"
+	"reflect"
 	flag "github.com/ogier/pflag"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/mitchellh/go-homedir"
-	"strings"
-	"reflect"
+	"github.com/vaughan0/go-ini"
 )
 
 var defaultAttributes = [...]string{
@@ -47,20 +48,49 @@ var getter = map[string](func(*ec2.Instance)string){
 	"AvailabilityZone":  availabilityZone,
 }
 
+func createCredentials(profileName *string) *credentials.Credentials {
+	fmt.Println("Using profile:", *profileName)
+	profileFilepath, err := homedir.Expand("~/.aws/credentials")
+	if err != nil {
+		panic(err)
+	}
+
+	file, err := ini.LoadFile(profileFilepath)
+	if err != nil {
+		panic(err)
+	}
+
+	sourceProfile, ok := file.Get(*profileName, "source_profile")
+	if ok {
+		// Using AssumeRole
+		roleArn, _ := file.Get(*profileName, "role_arn")
+		roleSessionName := "ec2ls"
+		creds := credentials.NewSharedCredentials(profileFilepath, sourceProfile)
+		svc := sts.New(session.New(), &aws.Config{Credentials: creds})
+		result, err := svc.AssumeRole(&sts.AssumeRoleInput{
+			RoleArn: &roleArn,
+			RoleSessionName: &roleSessionName,
+		})
+		if err != nil {
+			panic(err)
+		}
+
+		tmpCreds := result.Credentials
+		return credentials.NewStaticCredentials(
+			*tmpCreds.AccessKeyId,
+			*tmpCreds.SecretAccessKey,
+			*tmpCreds.SessionToken)
+	}
+	return credentials.NewSharedCredentials(profileFilepath, *profileName)
+}
+
 func main() {
 	config := aws.Config{}
 	profileName := flag.StringP("profile", "p", "", "AWS profile")
 	flag.Parse()
 
 	if len(*profileName) > 0 {
-		profileFilepath, err := homedir.Expand("~/.aws/credentials")
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		fmt.Println("Using profile:", *profileName)
-		creds := credentials.NewSharedCredentials(profileFilepath, *profileName)
-		config.Credentials = creds
+		config.Credentials = createCredentials(profileName)
 	}
 
 	// Create an EC2 service object in the "us-west-2" region
