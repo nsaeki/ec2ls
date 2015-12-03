@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"fmt"
 	"strings"
 	"reflect"
@@ -12,6 +13,11 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/mitchellh/go-homedir"
 	"github.com/vaughan0/go-ini"
+)
+
+const (
+	programName = "ec2ls"
+	programVersion = "0.0.3"
 )
 
 var defaultAttributes = [...]string{
@@ -87,7 +93,13 @@ func createCredentials(profileName *string) *credentials.Credentials {
 func main() {
 	config := aws.Config{}
 	profileName := flag.StringP("profile", "p", "", "AWS profile")
+	version := flag.BoolP("version", "v", false, "Show version")
 	flag.Parse()
+
+	if *version {
+		fmt.Println(programName, programVersion)
+		os.Exit(0)
+	}
 
 	if len(*profileName) > 0 {
 		config.Credentials = createCredentials(profileName)
